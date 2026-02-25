@@ -59,7 +59,16 @@
   a small CPU→GPU transfer speedup.
 - **Note:** On Linux/Mac `num_workers=4` works fine. Windows-specific issue.
 
-### 5. Larger batch size (64 vs 32) = real speedup
+### 5. Overfitting — add early stopping
+- **Symptom:** Run 2 peaked at AUROC 0.7686 (epoch 19) then declined to 0.7324 by
+  epoch 37 while train loss kept dropping — classic overfitting.
+- **Fix:** Added `--early-stop-patience N` (default 10). Stops training if val AUROC
+  hasn't improved in N consecutive epochs. Run 2 would have stopped at epoch 29
+  instead of wasting ~20 epochs past peak.
+- **Usage:** `python src/train.py ... --early-stop-patience 10`
+  Set to 0 to disable.
+
+### 6. Larger batch size (64 vs 32) = real speedup
 - **Result:** Batch 64 → 63 batches/epoch at ~1.2 it/s ≈ 51 sec/epoch
   vs Batch 32 → 125 batches/epoch at ~1.0 it/s ≈ 125 sec/epoch
 - **Takeaway:** Doubling batch size roughly halved epoch time with no AUROC penalty.

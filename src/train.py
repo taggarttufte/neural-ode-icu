@@ -116,6 +116,7 @@ def train(args):
 
     best_auroc = 0.0
     start_epoch = 1
+    epochs_no_improve = 0
     history = {'train_loss': [], 'val_loss': [], 'val_auroc': [], 'val_auprc': []}
 
     # Resume from checkpoint if available
@@ -126,8 +127,9 @@ def train(args):
         optimizer.load_state_dict(checkpoint['optimizer_state'])
         start_epoch = checkpoint['epoch'] + 1
         best_auroc = checkpoint['best_auroc']
+        epochs_no_improve = checkpoint.get('epochs_no_improve', 0)
         history = checkpoint['history']
-        print(f"Resumed from epoch {checkpoint['epoch']} (best AUROC so far: {best_auroc:.4f})")
+        print(f"Resumed from epoch {checkpoint['epoch']} (best AUROC: {best_auroc:.4f}, no-improve streak: {epochs_no_improve})")
 
     print(f"\nTraining for {args.epochs} epochs (starting at {start_epoch})...")
     for epoch in range(start_epoch, args.epochs + 1):
@@ -162,6 +164,16 @@ def train(args):
         print(f"Epoch {epoch:3d} | Train Loss: {avg_train_loss:.4f} | "
               f"Val Loss: {val_loss:.4f} | AUROC: {val_auroc:.4f} | AUPRC: {val_auprc:.4f}")
 
+        # Save best model
+        if val_auroc > best_auroc:
+            best_auroc = val_auroc
+            epochs_no_improve = 0
+            os.makedirs(os.path.join(results_dir, 'checkpoints'), exist_ok=True)
+            torch.save(model.state_dict(), os.path.join(results_dir, 'checkpoints', 'best_model.pt'))
+            print(f"  --> New best AUROC: {best_auroc:.4f} (saved)")
+        else:
+            epochs_no_improve += 1
+
         # Save latest checkpoint every epoch (for resume)
         os.makedirs(os.path.join(results_dir, 'checkpoints'), exist_ok=True)
         torch.save({
@@ -169,14 +181,14 @@ def train(args):
             'model_state': model.state_dict(),
             'optimizer_state': optimizer.state_dict(),
             'best_auroc': best_auroc,
+            'epochs_no_improve': epochs_no_improve,
             'history': history,
         }, os.path.join(results_dir, 'checkpoints', 'latest_model.pt'))
 
-        # Save best model
-        if val_auroc > best_auroc:
-            best_auroc = val_auroc
-            torch.save(model.state_dict(), os.path.join(results_dir, 'checkpoints', 'best_model.pt'))
-            print(f"  --> New best AUROC: {best_auroc:.4f} (saved)")
+        # Early stopping
+        if args.early_stop_patience > 0 and epochs_no_improve >= args.early_stop_patience:
+            print(f"\nEarly stopping: no improvement for {epochs_no_improve} epochs.")
+            break
 
     # Final test evaluation
     print("\nLoading best model for test evaluation...")
@@ -201,5 +213,6 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--kl-weight', type=float, default=0.1)
     parser.add_argument('--resume', action='store_true', help='Resume from latest checkpoint')
+    parser.add_argument('--early-stop-patience', type=int, default=10, help='Stop if val AUROC does not improve for N epochs (0 = disabled)')
     args = parser.parse_args()
     train(args)
