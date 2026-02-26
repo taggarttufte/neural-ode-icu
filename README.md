@@ -10,42 +10,32 @@ This project implements the Latent ODE architecture from [Rubanova et al. (2019)
 
 ## Results
 
-### Run 1 — Baseline
-| Config | Value |
-|--------|-------|
-| latent-dim | 32 |
-| hidden-dim | 64 |
-| batch-size | 32 |
-| epochs | 30 |
+### Model Comparison
 
-| Metric | Value |
-|--------|-------|
-| Test AUROC | **0.7464** |
-| Test AUPRC | **0.4060** |
-| Best Val AUROC | 0.7524 (epoch 21) |
+| Model | Test AUROC | Test AUPRC | Notes |
+|-------|-----------|-----------|-------|
+| XGBoost (367 features) | **0.8680** | **0.5626** | Feature engineering + gradient boosting |
+| Neural ODE — Run 1 | 0.7464 | 0.4060 | latent-dim 32, hidden-dim 64, 30 epochs |
+| Neural ODE — Run 2 | 0.7387 | 0.3929 | latent-dim 64, hidden-dim 128, 50 epochs |
+| Neural ODE — Run 3 | 0.7377 | 0.3774 | latent-dim 32, hidden-dim 64, early stopping |
+| SAPS-II (clinical baseline) | ~0.74 | — | Rule-based severity score used in practice |
+| 2012 Challenge winners | ~0.85 | — | Feature engineering + ensembles |
 
-### Run 2 — Larger Model
-| Config | Value |
-|--------|-------|
-| latent-dim | 64 |
-| hidden-dim | 128 |
-| batch-size | 64 |
-| epochs | 50 |
-| kl-weight | 0.1 |
+**Key finding:** On 12k patients, traditional feature engineering + XGBoost significantly outperforms the Neural ODE (~0.87 vs ~0.75 AUROC). This is consistent with the 2012 challenge results and reflects a data scale effect — Neural ODEs are better suited to larger datasets where their continuous-time dynamics can fully generalize. The next step is scaling to MIMIC-IV (~50-70k patients) to test this hypothesis.
 
-| Metric | Value |
-|--------|-------|
-| Test AUROC | **0.7387** |
-| Test AUPRC | **0.3929** |
-| Best Val AUROC | 0.7686 (epoch 19) |
-
-> **Note:** The larger model peaked earlier (epoch 19) and overfit significantly afterwards — best val AUROC of 0.7686 did not translate to better test performance. With 12k patients the smaller model generalises better. Early stopping (added after run 2) will prevent this in future runs.
-
-### Training Curves — Run 2
+### Neural ODE Training Curves — Run 2
 ![Training Curves](results/training_curves.png)
 
 ### ROC & Precision-Recall Curves — Run 2
 ![Test Performance](results/test_performance.png)
+
+### Neural ODE Run Details
+
+| Run | latent-dim | hidden-dim | Stopped at | Best Val AUROC |
+|-----|-----------|-----------|-----------|---------------|
+| 1 | 32 | 64 | Epoch 30 | 0.7524 (ep 21) |
+| 2 | 64 | 128 | Epoch 50 | 0.7686 (ep 19) |
+| 3 | 32 | 64 | Epoch 28 (early stop) | 0.7461 (ep 14) |
 
 ## Dataset
 
@@ -84,6 +74,7 @@ neural-ode-icu/
 │   ├── dataset.py      # Data loading, preprocessing, PhysioNetDataset
 │   ├── model.py        # GRUEncoder, ODEFunc, LatentODE
 │   ├── train.py        # Training loop, eval, checkpoint/resume, early stopping
+│   ├── baseline.py     # XGBoost baseline (367 hand-crafted features)
 │   └── plot_results.py # Training curves + ROC/PR curve generation
 ├── results/
 │   ├── training_curves.png
@@ -116,6 +107,9 @@ python src/train.py --epochs 50 --batch-size 64 --latent-dim 32 --early-stop-pat
 
 # Resume interrupted run
 python src/train.py --epochs 50 --batch-size 64 --latent-dim 32 --early-stop-patience 10 --resume
+
+# Run XGBoost baseline
+python src/baseline.py
 
 # Plot results
 python src/plot_results.py
