@@ -29,11 +29,16 @@ This project implements the Latent ODE architecture from [Rubanova et al. (2019)
 ### XGBoost Baseline — ROC & Precision-Recall
 ![Baseline Performance](results/baseline_performance.png)
 
-### Neural ODE Training Curves — Run 2
-![Training Curves](results/training_curves.png)
+### Run 3 — Training Curves
+![Run 3 Training Curves](results/run3_training_curves.png)
 
-### Neural ODE ROC & Precision-Recall — Run 2
-![Test Performance](results/test_performance.png)
+### Run 3 — Test Set ROC & Precision-Recall
+![Run 3 Test Performance](results/run3_test_performance.png)
+
+### Run 2 vs Run 3 — Validation AUROC / AUPRC
+> Note: Run 2 log starts at epoch 24 (resumed after timeout). Run 3 shows full training from epoch 1 with early stopping at epoch 28.
+
+![Run 2 vs Run 3](results/run2_vs_run3.png)
 
 ### Neural ODE Run Details
 
@@ -82,7 +87,8 @@ neural-ode-icu/
 │   ├── train.py        # Training loop, eval, checkpoint/resume, early stopping
 │   ├── baseline.py     # XGBoost baseline (367 hand-crafted features)
 │   ├── plot_results.py # Neural ODE training curves + ROC/PR curves
-│   └── plot_baseline.py # XGBoost ROC/PR + combined model comparison plot
+│   ├── plot_baseline.py # XGBoost ROC/PR + combined model comparison plot
+│   └── plot_runs.py     # Run 3 curves + Run 2 vs Run 3 comparison
 ├── results/
 │   ├── training_curves.png
 │   ├── test_performance.png
