@@ -23,10 +23,16 @@ This project implements the Latent ODE architecture from [Rubanova et al. (2019)
 
 **Key finding:** On 12k patients, traditional feature engineering + XGBoost significantly outperforms the Neural ODE (~0.87 vs ~0.75 AUROC). This is consistent with the 2012 challenge results and reflects a data scale effect — Neural ODEs are better suited to larger datasets where their continuous-time dynamics can fully generalize. The next step is scaling to MIMIC-IV (~50-70k patients) to test this hypothesis.
 
+### ROC Curve Comparison — XGBoost vs Neural ODE
+![Model Comparison](results/model_comparison.png)
+
+### XGBoost Baseline — ROC & Precision-Recall
+![Baseline Performance](results/baseline_performance.png)
+
 ### Neural ODE Training Curves — Run 2
 ![Training Curves](results/training_curves.png)
 
-### ROC & Precision-Recall Curves — Run 2
+### Neural ODE ROC & Precision-Recall — Run 2
 ![Test Performance](results/test_performance.png)
 
 ### Neural ODE Run Details
@@ -75,7 +81,8 @@ neural-ode-icu/
 │   ├── model.py        # GRUEncoder, ODEFunc, LatentODE
 │   ├── train.py        # Training loop, eval, checkpoint/resume, early stopping
 │   ├── baseline.py     # XGBoost baseline (367 hand-crafted features)
-│   └── plot_results.py # Training curves + ROC/PR curve generation
+│   ├── plot_results.py # Neural ODE training curves + ROC/PR curves
+│   └── plot_baseline.py # XGBoost ROC/PR + combined model comparison plot
 ├── results/
 │   ├── training_curves.png
 │   ├── test_performance.png
