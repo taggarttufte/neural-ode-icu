@@ -70,6 +70,8 @@ def main():
     criterion = nn.BCELoss()
 
     best_val_auroc = 0.0
+    patience = 10
+    epochs_no_improve = 0
 
     for epoch in range(1, args.epochs + 1):
         model.train()
@@ -95,7 +97,13 @@ def main():
 
         if val_auroc > best_val_auroc:
             best_val_auroc = val_auroc
+            epochs_no_improve = 0
             torch.save(model.state_dict(), f"{OUT_DIR}/mimic_ode_best.pt")
+        else:
+            epochs_no_improve += 1
+            if epochs_no_improve >= patience:
+                print(f"Early stopping at epoch {epoch} (no improvement for {patience} epochs)")
+                break
 
     test_auroc = evaluate(model, test_loader, device)
     print(f"\nTest AUROC: {test_auroc:.4f}")
