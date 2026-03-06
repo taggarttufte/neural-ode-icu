@@ -61,7 +61,7 @@ def main():
                               shuffle=False, collate_fn=collate_fn, num_workers=4)
 
     model = LatentODE(
-        input_dim=2 * N_VARS,
+        input_dim=N_VARS,
         latent_dim=args.latent_dim,
         hidden_dim=args.hidden_dim,
     ).to(device)
@@ -82,8 +82,9 @@ def main():
             labels  = batch['labels'].to(device)
 
             optimizer.zero_grad()
-            probs = model.predict_proba(times, values, mask, seq_len)
-            loss  = criterion(probs, labels)
+            logits, kl_loss = model(times, values, mask, seq_len)
+            probs = torch.sigmoid(logits)
+            loss  = criterion(probs, labels) + 0.001 * kl_loss
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
