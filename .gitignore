@@ -1,0 +1,25 @@
+# Data (raw files are large — don't commit)
+data/raw/
+data/processed/
+*.tar.gz
+
+# Results and checkpoints
+results/checkpoints/
+results/run1/
+*.pt
+*.pth
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

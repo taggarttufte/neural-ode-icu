@@ -1,0 +1,46 @@
+Loading data...
+Extracting features...
+  Feature shape: (3994, 367)  (367 features per patient)
+  Positive class weight: 6.21x
+
+Training XGBoost...
+[0]	validation_0-auc:0.72576
+[50]	validation_0-auc:0.85112
+[100]	validation_0-auc:0.86122
+[150]	validation_0-auc:0.86448
+[200]	validation_0-auc:0.86636
+[250]	validation_0-auc:0.86744
+[300]	validation_0-auc:0.86838
+[350]	validation_0-auc:0.86875
+
+Val Results:
+  AUROC : 0.8697
+  AUPRC : 0.5360
+
+Test Results:
+  AUROC : 0.8680
+  AUPRC : 0.5626
+
+Top 20 most important features:
+   1. var10_last                     0.0249
+   2. var04_last                     0.0191
+   3. var31_first                    0.0102
+   4. var18_count                    0.0088
+   5. ICUType                        0.0086
+   6. var04_min                      0.0082
+   7. var09_t_last                   0.0080
+   8. var03_max                      0.0079
+   9. var33_mean                     0.0078
+  10. var27_max                      0.0074
+  11. var31_mean                     0.0074
+  12. var04_mean                     0.0073
+  13. var21_t_first                  0.0068
+  14. var03_min                      0.0068
+  15. var31_trend                    0.0065
+  16. var10_mean                     0.0064
+  17. var27_min                      0.0063
+  18. var03_first                    0.0061
+  19. var27_mean                     0.0059
+  20. var23_count                    0.0055
+
+Model saved to results/xgboost_baseline.json

@@ -1,0 +1,42 @@
+Device: cuda
+Loading data...
+  Train: 3994 | Val: 3992 | Test: 3995
+Model parameters: 115,009
+Resumed from epoch 23 (best AUROC so far: 0.7686)
+
+Training for 50 epochs (starting at 24)...
+Epoch  24 | Train Loss: 0.9487 | Val Loss: 0.5676 | AUROC: 0.7445 | AUPRC: 0.4178
+Epoch  25 | Train Loss: 0.9668 | Val Loss: 0.5745 | AUROC: 0.7400 | AUPRC: 0.4143
+Epoch  26 | Train Loss: 0.9657 | Val Loss: 0.5950 | AUROC: 0.7392 | AUPRC: 0.4130
+Epoch  27 | Train Loss: 0.9615 | Val Loss: 0.6176 | AUROC: 0.7462 | AUPRC: 0.4155
+Epoch  28 | Train Loss: 0.9524 | Val Loss: 0.6132 | AUROC: 0.7461 | AUPRC: 0.4147
+Epoch  29 | Train Loss: 0.9442 | Val Loss: 0.6074 | AUROC: 0.7439 | AUPRC: 0.4129
+Epoch  30 | Train Loss: 0.9580 | Val Loss: 0.5770 | AUROC: 0.7420 | AUPRC: 0.4103
+Epoch  31 | Train Loss: 0.9384 | Val Loss: 0.5733 | AUROC: 0.7377 | AUPRC: 0.4097
+Epoch  32 | Train Loss: 0.9331 | Val Loss: 0.5862 | AUROC: 0.7440 | AUPRC: 0.4117
+Epoch  33 | Train Loss: 0.9146 | Val Loss: 0.5676 | AUROC: 0.7385 | AUPRC: 0.4085
+Epoch  34 | Train Loss: 0.9476 | Val Loss: 0.5726 | AUROC: 0.7472 | AUPRC: 0.4096
+Epoch  35 | Train Loss: 0.9174 | Val Loss: 0.5635 | AUROC: 0.7371 | AUPRC: 0.4063
+Epoch  36 | Train Loss: 0.9224 | Val Loss: 0.5800 | AUROC: 0.7343 | AUPRC: 0.4052
+Epoch  37 | Train Loss: 0.9368 | Val Loss: 0.5994 | AUROC: 0.7324 | AUPRC: 0.4050
+Epoch  38 | Train Loss: 0.9386 | Val Loss: 0.6041 | AUROC: 0.7348 | AUPRC: 0.4070
+Epoch  39 | Train Loss: 0.9393 | Val Loss: 0.6106 | AUROC: 0.7377 | AUPRC: 0.4075
+Epoch  40 | Train Loss: 0.9281 | Val Loss: 0.5856 | AUROC: 0.7361 | AUPRC: 0.4071
+Epoch  41 | Train Loss: 0.9196 | Val Loss: 0.5977 | AUROC: 0.7390 | AUPRC: 0.4072
+Epoch  42 | Train Loss: 0.9052 | Val Loss: 0.5923 | AUROC: 0.7394 | AUPRC: 0.4072
+Epoch  43 | Train Loss: 0.9242 | Val Loss: 0.5762 | AUROC: 0.7327 | AUPRC: 0.4021
+Epoch  44 | Train Loss: 0.9058 | Val Loss: 0.5919 | AUROC: 0.7315 | AUPRC: 0.4016
+Epoch  45 | Train Loss: 0.8920 | Val Loss: 0.5929 | AUROC: 0.7317 | AUPRC: 0.4018
+Epoch  46 | Train Loss: 0.9058 | Val Loss: 0.5850 | AUROC: 0.7326 | AUPRC: 0.4023
+Epoch  47 | Train Loss: 0.8918 | Val Loss: 0.6069 | AUROC: 0.7313 | AUPRC: 0.4017
+Epoch  48 | Train Loss: 0.8983 | Val Loss: 0.5936 | AUROC: 0.7331 | AUPRC: 0.4029
+Epoch  49 | Train Loss: 0.9046 | Val Loss: 0.5877 | AUROC: 0.7312 | AUPRC: 0.4027
+Epoch  50 | Train Loss: 0.9193 | Val Loss: 0.5902 | AUROC: 0.7301 | AUPRC: 0.4014
+
+Loading best model for test evaluation...
+
+Test Results:
+  AUROC : 0.7387
+  AUPRC : 0.3929
+
+History saved to results/history.npy

@@ -1,0 +1,27 @@
+Using device: cuda
+Loading data...
+Train: 3994 | Val: 3992 | Test: 3995
+Trainable params: 108.3M
+Epoch 1 | Loss: 0.4119 | Val AUROC: 0.6651 | Val AUPRC: 0.2194
+  Saved best model (Val AUROC: 0.6651)
+Epoch 2 | Loss: 0.3891 | Val AUROC: 0.6845 | Val AUPRC: 0.2326
+  Saved best model (Val AUROC: 0.6845)
+Epoch 3 | Loss: 0.3778 | Val AUROC: 0.6753 | Val AUPRC: 0.2328
+Epoch 4 | Loss: 0.3745 | Val AUROC: 0.6998 | Val AUPRC: 0.2536
+  Saved best model (Val AUROC: 0.6998)
+Epoch 5 | Loss: 0.3580 | Val AUROC: 0.7134 | Val AUPRC: 0.2754
+  Saved best model (Val AUROC: 0.7134)
+Epoch 6 | Loss: 0.3344 | Val AUROC: 0.7217 | Val AUPRC: 0.2867
+  Saved best model (Val AUROC: 0.7217)
+Epoch 7 | Loss: 0.3180 | Val AUROC: 0.7229 | Val AUPRC: 0.2789
+  Saved best model (Val AUROC: 0.7229)
+Epoch 8 | Loss: 0.2853 | Val AUROC: 0.6921 | Val AUPRC: 0.2389
+Epoch 9 | Loss: 0.2511 | Val AUROC: 0.6939 | Val AUPRC: 0.2556
+Epoch 10 | Loss: 0.2230 | Val AUROC: 0.7014 | Val AUPRC: 0.2628
+Epoch 11 | Loss: 0.1995 | Val AUROC: 0.6892 | Val AUPRC: 0.2516
+Epoch 12 | Loss: 0.1683 | Val AUROC: 0.6762 | Val AUPRC: 0.2423
+  Early stopping: no improvement for 5 epochs
+
+Loading best model for test evaluation...
+
+Test AUROC: 0.7256 | Test AUPRC: 0.3004
