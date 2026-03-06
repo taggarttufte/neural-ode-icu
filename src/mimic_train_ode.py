@@ -41,7 +41,7 @@ def evaluate(model, loader, device):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs',      type=int,   default=1)
+    parser.add_argument('--epochs',      type=int,   default=30)
     parser.add_argument('--batch-size',  type=int,   default=64)
     parser.add_argument('--latent-dim',  type=int,   default=32)
     parser.add_argument('--hidden-dim',  type=int,   default=64)
@@ -70,7 +70,7 @@ def main():
     criterion = nn.BCELoss()
 
     best_val_auroc = 0.0
-    patience = 10
+    patience = 5
     epochs_no_improve = 0
 
     for epoch in range(1, args.epochs + 1):
