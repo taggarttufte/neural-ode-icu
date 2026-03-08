@@ -28,7 +28,7 @@ import pandas as pd
 from pathlib import Path
 
 # ── Paths ──────────────────────────────────────────────────────────────────
-NOTE_DIR   = Path("/home/j19w245/data/mimic-iv/physionet.org/files/mimiciv-note/2.2/note")
+NOTE_DIR   = Path("/home/j19w245/data/mimic-iv/physionet.org/files/mimic-iv-note/2.2/note")
 ICU_DIR    = Path("/home/j19w245/data/mimic-iv/physionet.org/files/mimiciv/3.1/icu")
 PROCESSED  = Path("/home/j19w245/neural-ode-icu/data/mimic_iv_processed_v2.npz")
 OUT_PATH   = Path("/home/j19w245/neural-ode-icu/data/mimic_iv_notes.npz")
