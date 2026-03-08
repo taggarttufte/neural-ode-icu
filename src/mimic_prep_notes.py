@@ -66,6 +66,11 @@ def main():
     stays['label'] = stays['stay_id'].map(label_map)
     stays = stays.dropna(subset=['label'])
 
+    # A hospital admission (hadm_id) can contain multiple ICU stays.
+    # Keep the first ICU stay per admission so hadm_id is unique.
+    stays = stays.sort_values('intime').drop_duplicates('hadm_id', keep='first')
+    print(f"  {len(stays)} unique admissions after dedup")
+
     hadm_to_stay  = stays.set_index('hadm_id')[['stay_id', 'intime', 'label']].to_dict('index')
 
     # ── 3. Load notes ──────────────────────────────────────────────────────
