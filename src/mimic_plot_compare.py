@@ -18,23 +18,63 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, roc_curve, average_precision_score
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
+from transformers import AutoTokenizer
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mimic_dataset import load_splits, collate_fn, N_VARS
 from model import LatentODE
+from clinicalbert.model import ClinicalBERTClassifier
 
-DATA_PATH      = "/home/j19w245/neural-ode-icu/data/mimic_iv_processed_v2.npz"
-XGB_MODEL_PATH = "/home/j19w245/neural-ode-icu/results/mimic_xgb_model.json"
-ODE_MODEL_PATH = "/home/j19w245/neural-ode-icu/results/mimic_ode_best.pt"
-OUT_DIR        = "/home/j19w245/neural-ode-icu/results/plots"
+DATA_PATH       = "/home/j19w245/neural-ode-icu/data/mimic_iv_processed_v2.npz"
+XGB_MODEL_PATH  = "/home/j19w245/neural-ode-icu/results/mimic_xgb_model.json"
+ODE_MODEL_PATH  = "/home/j19w245/neural-ode-icu/results/mimic_ode_best.pt"
+BERT_MODEL_PATH = "/home/j19w245/neural-ode-icu/results/mimic_bert_best.pt"
+BERT_NAME       = "emilyalsentzer/Bio_ClinicalBERT"
+OUT_DIR         = "/home/j19w245/neural-ode-icu/results/plots"
 
 COLORS = {
     'XGBoost':    '#5b9af5',
     'Neural ODE': '#7ecfcf',
+    'BERT':       '#f5a05b',
     'Random':     '#555566',
 }
+
+BERT_FEATURE_NAMES = [
+    'HR', 'SBP', 'DBP', 'MBP', 'RespRate', 'Temp', 'SpO2',
+    'Glucose', 'Creatinine', 'Sodium', 'Potassium', 'Hematocrit', 'WBC',
+    'Bicarbonate', 'BUN', 'GCS_Motor', 'GCS_Verbal', 'GCS_Eye',
+    'UrineOut', 'Age'
+]
+
+
+def patient_to_text(values, mask, max_chars=2000):
+    parts = []
+    for t in range(values.shape[0]):
+        observed = [f"{BERT_FEATURE_NAMES[v]}={values[t, v]:.1f}"
+                    for v in range(values.shape[1]) if mask[t, v] == 1]
+        if observed:
+            parts.append(f"Hr{t}: {', '.join(observed)}.")
+    text = " ".join(parts)
+    return text[:max_chars] if text else "No observations."
+
+
+class MIMICTextDataset(Dataset):
+    def __init__(self, values, masks, labels, tokenizer, max_length=512):
+        self.values = values; self.masks = masks
+        self.labels = labels; self.tokenizer = tokenizer
+        self.max_length = max_length
+
+    def __len__(self): return len(self.labels)
+
+    def __getitem__(self, idx):
+        text = patient_to_text(self.values[idx], self.masks[idx])
+        enc  = self.tokenizer(text, max_length=self.max_length,
+                              padding='max_length', truncation=True, return_tensors='pt')
+        return {'input_ids': enc['input_ids'].squeeze(0),
+                'attention_mask': enc['attention_mask'].squeeze(0),
+                'label': torch.tensor(self.labels[idx], dtype=torch.float32)}
 
 STYLE = {
     'figure.facecolor': '#0f1117',
@@ -103,6 +143,23 @@ def get_ode_probs(test_loader, device):
     return np.concatenate(all_probs), np.concatenate(all_labels)
 
 
+def get_bert_probs(values_te, masks_te, labels_te, device):
+    tokenizer = AutoTokenizer.from_pretrained(BERT_NAME)
+    bert_ds   = MIMICTextDataset(values_te, masks_te, labels_te, tokenizer)
+    loader    = DataLoader(bert_ds, batch_size=16, shuffle=False, num_workers=4)
+    model = ClinicalBERTClassifier(BERT_NAME).to(device)
+    model.load_state_dict(torch.load(BERT_MODEL_PATH, map_location=device))
+    model.eval()
+    all_probs = []
+    with torch.no_grad():
+        for batch in loader:
+            ids  = batch['input_ids'].to(device)
+            attn = batch['attention_mask'].to(device)
+            probs = torch.sigmoid(model(ids, attn)).cpu().numpy()
+            all_probs.extend(probs.flatten())
+    return np.array(all_probs), labels_te
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     plt.rcParams.update(STYLE)
@@ -113,6 +170,15 @@ def main():
     y_all = d['labels']
     _, X_tmp, _, y_tmp = train_test_split(X_all, y_all, test_size=0.30, random_state=42, stratify=y_all)
     _, X_te, _, y_te   = train_test_split(X_tmp, y_tmp, test_size=0.50, random_state=42, stratify=y_tmp)
+
+    # For BERT we need raw values/masks on the same test split
+    rng = np.random.default_rng(42)
+    idx = rng.permutation(len(y_all))
+    n_tr = int(len(y_all) * 0.70); n_va = int(len(y_all) * 0.15)
+    te_idx = idx[n_tr + n_va:]
+    values_te = d['values'][te_idx]
+    masks_te  = d['masks'][te_idx]
+    labels_te = d['labels'][te_idx]
 
     _, _, test_ds = load_splits(DATA_PATH)
     test_loader   = DataLoader(test_ds, batch_size=64, shuffle=False,
@@ -142,6 +208,17 @@ def main():
         print(f"  Neural ODE  AUROC={auroc:.4f}  AUPRC={auprc:.4f}")
     else:
         print(f"ODE model not found at {ODE_MODEL_PATH}")
+
+    if os.path.exists(BERT_MODEL_PATH):
+        print("Evaluating ClinicalBERT (this may take a few minutes)...")
+        bert_probs, bert_labels = get_bert_probs(values_te, masks_te, labels_te, device)
+        fpr, tpr, _ = roc_curve(bert_labels, bert_probs)
+        auroc = roc_auc_score(bert_labels, bert_probs)
+        auprc = average_precision_score(bert_labels, bert_probs)
+        results['BERT'] = (fpr, tpr, auroc, auprc)
+        print(f"  BERT  AUROC={auroc:.4f}  AUPRC={auprc:.4f}")
+    else:
+        print(f"BERT model not found at {BERT_MODEL_PATH}")
 
     if not results:
         print("No models found. Exiting.")
