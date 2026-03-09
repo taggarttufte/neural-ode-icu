@@ -256,3 +256,24 @@ python -c "import torch; ck=torch.load('results/checkpoints/latest_model.pt', ma
 - **MIMIC Database v1.0.0 (mimicdb)** — original 1996 MIMIC, only 90 patients,
   waveform data, wrong format entirely
 - **MIMIC-III Demo** — open access but only 100 patients, not enough to train on
+
+## MIMIC-IV Runs (2026-03-05)
+
+### Data
+- mimic_iv_processed_v2.npz: 74829 patients, 48h, 20 features (18 chartevents + urine_output + age)
+- Mortality: 11.9%
+- Split: 70/15/15
+
+### XGBoost (COMPLETE)
+- Test AUROC: 0.9106 | AUPRC: 0.6652
+- Val AUROC: 0.9066 | AUPRC: 0.6571
+- 160 features (20 vars x 8 stats: mean/std/min/max/first/last/trend/count)
+
+### Neural ODE (1-epoch test)
+- Test AUROC: 0.8581 | Val: 0.8645
+- Full 50-epoch run: RUNNING overnight
+
+### ClinicalBERT
+- Blocked by PyTorch 2.5 / transformers torch.load CVE � upgraded to 2.6
+- Also needs: pip install accelerate sentencepiece protobuf
+- Status: 1-epoch test pending
