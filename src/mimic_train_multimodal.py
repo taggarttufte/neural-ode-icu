@@ -27,13 +27,14 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer, AutoModel
 from sklearn.metrics import roc_auc_score, average_precision_score
-from sklearn.model_selection import train_test_split
 
 # ── Config ────────────────────────────────────────────────────────────────────
 STRUCTURED_PATH = "data/mimic_iv_processed_v2.npz"
 NOTES_PATH      = "data/mimic_iv_notes.npz"
+SPLIT_PATH      = "data/canonical_split.npz"
 SAVE_PATH       = "results/mimic_multimodal_best.pt"
 RESULTS_PATH    = "results/mimic_multimodal_results.json"
+PREDS_PATH      = "results/preds_multimodal.npz"
 
 BERT_MODEL      = "emilyalsentzer/Bio_ClinicalBERT"
 MAX_LEN         = 512
@@ -155,12 +156,12 @@ class MultimodalFusion(nn.Module):
 
 # ── Data Loading ──────────────────────────────────────────────────────────────
 def load_and_align():
-    """Load structured + notes, align on stay_id, return intersection."""
+    """Load structured + notes, align on stay_id using canonical split."""
     print("Loading structured data...")
-    s        = np.load(STRUCTURED_PATH)
-    ts_data  = s["data"]       # (74829, 48, 20)
-    ts_ids   = s["stay_ids"]   # (74829,)
-    ts_labels = s["labels"]    # (74829,)
+    s         = np.load(STRUCTURED_PATH)
+    ts_values = s["values"]      # (74829, 48, 20)
+    ts_ids    = s["stay_ids"]    # (74829,)
+    ts_labels = s["labels"]      # (74829,)
 
     print("Loading notes data...")
     n           = np.load(NOTES_PATH, allow_pickle=True)
@@ -168,23 +169,29 @@ def load_and_align():
     note_texts  = n["texts"]     # (47142,) strings
     note_labels = n["labels"]    # (47142,)
 
-    # Index maps for O(1) lookup
+    print("Loading canonical split...")
+    sp = np.load(SPLIT_PATH)
+    all_ids    = sp["all_ids"]
+    all_labels = sp["all_labels"].astype(np.float32)
+    train_idx  = sp["train_idx"]
+    val_idx    = sp["val_idx"]
+    test_idx   = sp["test_idx"]
+
+    # Build index maps for O(1) lookup
     ts_id_map   = {int(sid): i for i, sid in enumerate(ts_ids)}
     note_id_map = {int(sid): i for i, sid in enumerate(note_ids)}
 
-    shared_ids = sorted(set(ts_id_map.keys()) & set(note_id_map.keys()))
-    print(f"Structured stays : {len(ts_ids)}")
-    print(f"Notes stays      : {len(note_ids)}")
-    print(f"Intersection     : {len(shared_ids)}")
+    # Align on the canonical intersection (all_ids)
+    ts_aligned    = np.stack([ts_values[ts_id_map[int(sid)]] for sid in all_ids])
+    texts_aligned = np.array([note_texts[note_id_map[int(sid)]] for sid in all_ids])
 
-    ts_aligned     = np.stack([ts_data[ts_id_map[sid]]           for sid in shared_ids])
-    texts_aligned  = np.array([note_texts[note_id_map[sid]]      for sid in shared_ids])
-    labels_aligned = np.array([ts_labels[ts_id_map[sid]]         for sid in shared_ids],
-                               dtype=np.float32)
-
+    print(f"Structured stays : {len(ts_ids):,}")
+    print(f"Notes stays      : {len(note_ids):,}")
+    print(f"Intersection     : {len(all_ids):,}")
     print(f"Aligned shape    : {ts_aligned.shape}")
-    print(f"Mortality rate   : {labels_aligned.mean():.3f}")
-    return ts_aligned, texts_aligned, labels_aligned
+    print(f"Mortality rate   : {all_labels.mean():.3f}")
+
+    return ts_aligned, texts_aligned, all_labels, train_idx, val_idx, test_idx
 
 
 # ── Training Loop ─────────────────────────────────────────────────────────────
@@ -227,14 +234,7 @@ def main():
     np.random.seed(SEED)
     os.makedirs("results", exist_ok=True)
 
-    ts, texts, labels = load_and_align()
-
-    # Stratified 80/10/10 split
-    idx = np.arange(len(labels))
-    tr_idx, tmp_idx = train_test_split(idx, test_size=0.2, random_state=SEED,
-                                       stratify=labels)
-    val_idx, te_idx = train_test_split(tmp_idx, test_size=0.5, random_state=SEED,
-                                       stratify=labels[tmp_idx])
+    ts, texts, labels, tr_idx, val_idx, te_idx = load_and_align()
     print(f"Train: {len(tr_idx)}  Val: {len(val_idx)}  Test: {len(te_idx)}")
 
     tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL)
@@ -310,6 +310,21 @@ def main():
         model, test_loader, None, criterion, train=False)
     print(f"Test AUROC : {te_auroc:.4f}")
     print(f"Test AUPRC : {te_auprc:.4f}")
+
+    # Save predictions for bootstrap CI analysis
+    model.eval()
+    all_preds, all_labels = [], []
+    with torch.no_grad():
+        for ts_b, input_ids, attn_mask, labels_b in test_loader:
+            ts_b       = ts_b.to(device)
+            input_ids  = input_ids.to(device)
+            attn_mask  = attn_mask.to(device)
+            logits     = model(ts_b, input_ids, attn_mask)
+            probs      = torch.sigmoid(logits).cpu().numpy()
+            all_preds.extend(probs)
+            all_labels.extend(labels_b.numpy())
+    np.savez(PREDS_PATH, preds=np.array(all_preds), labels=np.array(all_labels))
+    print(f"Predictions saved → {PREDS_PATH}")
 
     history.append({
         "test_auroc": te_auroc,
