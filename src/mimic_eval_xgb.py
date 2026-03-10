@@ -27,35 +27,59 @@ MODEL_PATH      = "results/mimic_xgb_model.json"
 SAVE_PATH       = "results/preds_xgb.npz"
 
 
-def build_features(data):
+def extract_features(values, masks):
     """
-    data : (N, 48, 20) time-series array
-    Returns (N, 20*6) feature matrix:
-      for each variable: mean, std, min, max, last-observed, missing-rate
+    values : (N, 48, 20)
+    masks  : (N, 48, 20)
+    returns: (N, 160) feature matrix — 8 features per variable
+    Must match mimic_train_xgb.py exactly.
     """
-    N, T, V = data.shape
-    feats = []
+    N, T, V = values.shape
+    features = np.zeros((N, V * 8), dtype=np.float32)
+    times = np.arange(T, dtype=np.float32)
+
     for v in range(V):
-        x = data[:, :, v]                  # (N, T)
-        obs_mask = (x != 0).astype(float)  # rough missingness proxy
+        vals = values[:, :, v]
+        msk  = masks[:, :, v]
+        counts = msk.sum(axis=1)
+        safe_counts = np.maximum(counts, 1)
+        means = (vals * msk).sum(axis=1) / safe_counts
+        sq_diff = ((vals - means[:, None]) ** 2) * msk
+        stds = np.sqrt(sq_diff.sum(axis=1) / safe_counts)
 
-        mean_val  = x.mean(axis=1)
-        std_val   = x.std(axis=1)
-        min_val   = x.min(axis=1)
-        max_val   = x.max(axis=1)
-        miss_rate = 1 - obs_mask.mean(axis=1)
+        vals_masked = np.where(msk == 1, vals, np.inf)
+        mins = vals_masked.min(axis=1)
+        mins[counts == 0] = 0.0
+        vals_masked2 = np.where(msk == 1, vals, -np.inf)
+        maxs = vals_masked2.max(axis=1)
+        maxs[counts == 0] = 0.0
 
-        # last observed (non-zero) value; fall back to 0 if all missing
-        last_val = np.zeros(N)
+        first_vals = np.zeros(N, dtype=np.float32)
+        last_vals  = np.zeros(N, dtype=np.float32)
+        trends     = np.zeros(N, dtype=np.float32)
         for i in range(N):
-            nz = np.where(obs_mask[i] > 0)[0]
-            if len(nz) > 0:
-                last_val[i] = x[i, nz[-1]]
+            obs_idx = np.where(msk[i] == 1)[0]
+            if len(obs_idx) > 0:
+                first_vals[i] = vals[i, obs_idx[0]]
+                last_vals[i]  = vals[i, obs_idx[-1]]
+                if len(obs_idx) > 1:
+                    t_obs = times[obs_idx]
+                    v_obs = vals[i, obs_idx]
+                    t_c = t_obs - t_obs.mean()
+                    if t_c.std() > 0:
+                        trends[i] = np.dot(t_c, v_obs) / np.dot(t_c, t_c)
 
-        feats.append(np.stack([mean_val, std_val, min_val, max_val,
-                                last_val, miss_rate], axis=1))
+        base = v * 8
+        features[:, base + 0] = means
+        features[:, base + 1] = stds
+        features[:, base + 2] = mins
+        features[:, base + 3] = maxs
+        features[:, base + 4] = first_vals
+        features[:, base + 5] = last_vals
+        features[:, base + 6] = trends
+        features[:, base + 7] = counts
 
-    return np.concatenate(feats, axis=1)   # (N, V*6)
+    return features
 
 
 def main():
@@ -66,19 +90,21 @@ def main():
     test_ids = set(split["test_ids"].tolist())
 
     print("Loading structured data...")
-    s        = np.load(STRUCTURED_PATH)
-    ts_ids   = s["stay_ids"].astype(int)
-    ts_data  = s["data"]
+    s         = np.load(STRUCTURED_PATH)
+    ts_ids    = s["stay_ids"].astype(int)
+    ts_values = s["values"]
+    ts_masks  = s["masks"]
     ts_labels = s["labels"].astype(int)
 
     # Select test patients
-    mask      = np.array([sid in test_ids for sid in ts_ids])
-    test_data = ts_data[mask]
+    mask        = np.array([sid in test_ids for sid in ts_ids])
+    test_values = ts_values[mask]
+    test_masks  = ts_masks[mask]
     test_labels = ts_labels[mask]
-    print(f"Test patients : {test_data.shape[0]:,}  mortality : {test_labels.mean():.4f}")
+    print(f"Test patients : {test_values.shape[0]:,}  mortality : {test_labels.mean():.4f}")
 
     print("Building features...")
-    X_test = build_features(test_data)
+    X_test = extract_features(test_values, test_masks)
 
     print("Loading XGBoost model...")
     model = xgb.XGBClassifier()

@@ -45,14 +45,13 @@ class BERTClassifier(nn.Module):
         super().__init__()
         self.bert = AutoModel.from_pretrained(bert_model_name)
         hidden = self.bert.config.hidden_size
-        self.classifier = nn.Sequential(
-            nn.Dropout(0.3),
-            nn.Linear(hidden, 1),
-        )
+        self.dropout = nn.Dropout(0.3)
+        self.classifier = nn.Linear(hidden, 1)
 
     def forward(self, input_ids, attention_mask):
         out    = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         cls    = out.last_hidden_state[:, 0, :]
+        cls    = self.dropout(cls)
         return self.classifier(cls).squeeze(-1)
 
 
