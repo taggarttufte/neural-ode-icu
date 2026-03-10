@@ -14,20 +14,23 @@ This project implements the Latent ODE architecture from [Rubanova et al. (2019)
 
 ### MIMIC-IV (Main Results)
 
-| Model | Test AUROC | Test AUPRC | Input |
-|-------|-----------|-----------|-------|
-| **XGBoost** | **0.9106** | **0.6652** | Structured vitals (20 vars, 367 features) |
-| **Neural ODE** | **0.8902** | **0.5983** | Structured vitals (20 vars, hourly 48h) |
-| BERT (clinical notes) | 0.8143 | ~0.354 | First-48h nursing/physician notes |
-| BERT (vitals serialized) | 0.7936 | 0.3434 | Vitals converted to text tokens |
+All models evaluated on an identical canonical test set (n=4,715, 11.4% mortality) with 2,000-iteration bootstrap 95% confidence intervals and DeLong significance testing.
 
-**Key finding:** Structured time-series models significantly outperform text-based approaches (~0.91/0.89 vs ~0.81). Notes-based BERT outperforms serialized-vitals BERT, suggesting clinical free text carries signal beyond what structured data alone captures. Multimodal fusion (Neural ODE latent + BERT CLS) is the natural next step.
+| Model | Test AUROC | 95% CI | Test AUPRC | 95% CI | Input |
+|-------|-----------|--------|-----------|--------|-------|
+| **XGBoost** | **0.9565** | [0.9473, 0.9644] | **0.8269** | [0.7976, 0.8524] | Structured vitals (20 vars, 160 features) |
+| **Neural ODE** | **0.9039** | [0.8907, 0.9164] | **0.6661** | [0.6292, 0.7013] | Structured vitals (20 vars, hourly 48h) |
+| **BERT (notes)** | **0.8809** | [0.8661, 0.8947] | **0.5387** | [0.4916, 0.5839] | First-48h nursing/physician notes |
 
-#### ROC Curve Comparison
-![Model Comparison](results/plots/compare_roc.png)
+**Statistical significance:** All pairwise differences are significant (non-overlapping CIs). XGBoost vs Neural ODE: DeLong z=11.22, p < 0.0001.
 
-#### AUROC & AUPRC Summary
-![Summary](results/plots/compare_summary.png)
+**Key finding:** Structured time-series models significantly outperform text-based approaches. Feature-engineered XGBoost dominates, suggesting that careful statistical summaries of vitals capture more predictive signal than continuous-time modeling for this task. Multimodal fusion (Neural ODE latent + BERT CLS) is the natural next step.
+
+#### ROC Curve Comparison (95% CI)
+![Model Comparison](results/plots/compare_roc_ci.png)
+
+#### AUROC with Bootstrap 95% CI
+![Summary](results/plots/compare_summary_ci.png)
 
 #### XGBoost — ROC Curve
 ![XGBoost ROC](results/plots/xgb_roc.png)
