@@ -44,11 +44,11 @@ LATENT_TS       = 64        # GRU output dim after projection
 LATENT_NOTES    = 768       # BERT CLS dim (fixed)
 FUSION_HIDDEN   = 256
 BATCH_SIZE      = 32
-EPOCHS          = 10
-LR_BERT         = 2e-5      # lower LR for pretrained BERT
-LR_OTHER        = 2e-4      # higher LR for GRU + fusion head
-WARMUP_EPOCHS   = 2
-FREEZE_BERT     = False     # set True to freeze BERT and only train GRU+head
+EPOCHS          = 15
+LR_BERT         = 1e-5      # lower LR for pretrained BERT (unused when frozen)
+LR_OTHER        = 1e-4      # GRU + fusion head
+WARMUP_EPOCHS   = 3
+FREEZE_BERT     = True      # freeze BERT — use as fixed feature extractor
 SEED            = 42
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -138,10 +138,10 @@ class MultimodalFusion(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(latent_ts + latent_notes, fusion_hidden),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            nn.Dropout(0.5),
             nn.Linear(fusion_hidden, 64),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.3),
             nn.Linear(64, 1)
         )
 
