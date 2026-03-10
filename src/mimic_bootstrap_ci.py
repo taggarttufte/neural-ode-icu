@@ -243,9 +243,10 @@ def main():
         json.dump(results, f, indent=2)
     print(f"\nResults saved → {json_path}")
 
-    # Plots
+    # Plots (exclude delong_tests key from summary plot)
+    plot_results = {k: v for k, v in results.items() if k != "delong_tests"}
     plot_roc_with_ci(model_data, "results/plots/compare_roc_ci.png")
-    plot_summary_ci(results, "results/plots/compare_summary_ci.png")
+    plot_summary_ci(plot_results, "results/plots/compare_summary_ci.png")
 
 
 if __name__ == "__main__":
