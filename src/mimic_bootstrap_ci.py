@@ -31,14 +31,16 @@ N_BOOTSTRAP = 2000
 SEED        = 42
 
 MODELS = {
-    "XGBoost":     "results/preds_xgb.npz",
-    "Neural ODE":  "results/preds_ode.npz",
-    "BERT (notes)":"results/preds_bert_notes.npz",
+    "XGBoost":          "results/preds_xgb.npz",
+    "Neural ODE":       "results/preds_ode.npz",
+    "Multimodal":       "results/preds_multimodal.npz",
+    "BERT (notes)":     "results/preds_bert_notes.npz",
 }
 
 COLORS = {
     "XGBoost":      "#4C9BE8",
     "Neural ODE":   "#4ECDC4",
+    "Multimodal":   "#A855F7",
     "BERT (notes)": "#FF8C42",
 }
 
