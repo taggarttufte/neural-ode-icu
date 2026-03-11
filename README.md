@@ -20,11 +20,16 @@ All models evaluated on an identical canonical test set (n=4,715, 11.4% mortalit
 |-------|-----------|--------|-----------|--------|-------|
 | **XGBoost** | **0.9565** | [0.9473, 0.9644] | **0.8269** | [0.7976, 0.8524] | Structured vitals (20 vars, 160 features) |
 | **Neural ODE** | **0.9039** | [0.8907, 0.9164] | **0.6661** | [0.6292, 0.7013] | Structured vitals (20 vars, hourly 48h) |
-| **BERT (notes)** | **0.8809** | [0.8661, 0.8947] | **0.5387** | [0.4916, 0.5839] | First-48h nursing/physician notes |
+| Multimodal (GRU + BERT) | 0.8858 | [0.8720, 0.8992] | — | — | Structured vitals + clinical notes (frozen BERT) |
+| BERT (notes) | 0.8809 | [0.8661, 0.8947] | 0.5387 | [0.4916, 0.5839] | First-48h nursing/physician notes |
 
 **Statistical significance:** All pairwise differences are significant (non-overlapping CIs). XGBoost vs Neural ODE: DeLong z=11.22, p < 0.0001.
 
-**Key finding:** Structured time-series models significantly outperform text-based approaches. Feature-engineered XGBoost dominates, suggesting that careful statistical summaries of vitals capture more predictive signal than continuous-time modeling for this task. Multimodal fusion (Neural ODE latent + BERT CLS) is the natural next step.
+**Key findings:**
+- Structured time-series models significantly outperform text-based approaches at every comparison
+- Feature-engineered XGBoost (0.9565) dominates all neural approaches — careful statistical summaries of vitals capture more signal than continuous-time modeling on this dataset
+- Multimodal fusion (GRU + frozen BERT) marginally outperforms BERT alone (+0.005) but falls well short of Neural ODE on structured data alone — clinical notes add minimal complementary signal beyond what vitals already capture
+- The structured-vs-text performance gap persists even when fusing both modalities, suggesting future work should focus on better time-series architectures or larger language models (LoRA fine-tuning of 7B+ models)
 
 #### ROC Curve Comparison (95% CI)
 ![Model Comparison](results/plots/compare_roc_ci.png)
@@ -106,10 +111,12 @@ Observations (irregular) --> GRU Encoder (backwards) --> z0 ~ N(mean, var)
 - Input: concatenated first-48h nursing and physician notes (max 512 tokens)
 - CLS token → linear classifier
 
-### Multimodal Fusion (In Progress)
+### Multimodal Fusion
 - GRU encoder (time series) → 64-dim latent
-- ClinicalBERT (notes) → 768-dim CLS token
-- Concat → FC(832→256) → ReLU → Dropout → FC(256→1)
+- ClinicalBERT (notes, frozen) → 768-dim CLS token
+- Concat → FC(832→256) → ReLU → Dropout(0.5) → FC(256→64) → Dropout(0.3) → FC(64→1)
+- Differential LRs: BERT 1e-5 (unused when frozen), GRU+head 1e-4
+- Best val AUROC 0.8920 at epoch 22/25, no overfitting with frozen BERT
 - Script: `src/mimic_train_multimodal.py`
 
 ---
