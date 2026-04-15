@@ -1,5 +1,7 @@
 # Neural ODE Training Notes & Lessons Learned
 
+> **Superseded — see README for canonical results.** This file is preserved as a chronological training log (PhysioNet 2012 experiments, early MIMIC-IV runs, lessons learned on Windows/AMP/dopri5). The final MIMIC-IV numbers below (e.g. XGBoost 0.9106 on a 70/15/15 split) were replaced by results on a canonical 80/10/10 intersection split reported in the README. Refer to the README for the headline numbers; treat this file as historical notes.
+
 ## Run History
 
 ### Run 1 — PhysioNet 2012 (baseline)
@@ -274,6 +276,6 @@ python -c "import torch; ck=torch.load('results/checkpoints/latest_model.pt', ma
 - Full 50-epoch run: RUNNING overnight
 
 ### ClinicalBERT
-- Blocked by PyTorch 2.5 / transformers torch.load CVE � upgraded to 2.6
+- Blocked by PyTorch 2.5 / transformers torch.load CVE � upgraded to 2.6
 - Also needs: pip install accelerate sentencepiece protobuf
 - Status: 1-epoch test pending
