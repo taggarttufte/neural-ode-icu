@@ -23,3 +23,8 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Paper drafts and generators (kept local)
+paper_draft.*
+generate_paper*.py
+PROJECT_CONTEXT.md
